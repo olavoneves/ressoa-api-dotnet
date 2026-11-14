@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Ressoa.Telemetria.Api/Ressoa.Telemetria.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Ressoa.Telemetria.IntegrationTests/Ressoa.Telemetria.IntegrationTests.csproj" />
+    <Project Path="tests/Ressoa.Telemetria.UnitTests/Ressoa.Telemetria.UnitTests.csproj" />
+  </Folder>
+</Solution>
