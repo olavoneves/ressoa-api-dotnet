@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Ressoa.Telemetria.Api.Application;
 using Ressoa.Telemetria.Api.Background;
@@ -38,8 +39,17 @@ if (builder.Configuration.GetValue("MonitorSinal:Habilitado", true))
     builder.Services.AddHostedService<MonitorSinalService>();
 }
 
+// Atrás do proxy TLS da nuvem (Render/Azure): respeita X-Forwarded-Proto/Host para o Swagger gerar URLs https.
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+    o.KnownIPNetworks.Clear();
+    o.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors();
