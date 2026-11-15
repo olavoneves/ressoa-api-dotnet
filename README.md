@@ -9,7 +9,7 @@ O **Ressoa** é um aparelho de ultrassom (ESP32 + transdutor piezoelétrico) que
 
 **Valor ao cidadão:** o morador de periferia com água intermitente vê no app se o aparelho está funcionando, recebe alertas simples (bateria baixa, sem sinal, pulso falhou, água quente) e o gestor de saúde enxerga onde a proteção parou.
 
-## Integrantes
+## Integrantes — Grupo **Ressoa** · Turma **2TDSR**
 
 | Nome | RM |
 |---|---|
@@ -42,6 +42,8 @@ src/Ressoa.Telemetria.Api/
 ├── Endpoints/     rotas Minimal API
 ├── Infra/         Auth (JWT), RateLimiting, Health, OpenApi
 └── Background/    MonitorSinalService (marca SEM_SINAL)
+tools/
+└── simulador.cs   simulador de frota para a demonstração
 tests/
 ├── Ressoa.Telemetria.UnitTests/         regras de negócio (xUnit)
 └── Ressoa.Telemetria.IntegrationTests/  endpoints com WebApplicationFactory + SQLite
@@ -101,6 +103,24 @@ dotnet run --project src/Ressoa.Telemetria.Api
 **Testes:** `dotnet test` (não precisam de Oracle: usam SQLite em memória).
 
 Para testar no Swagger: faça login na API Java com `morador@ressoa.app` (usuários de teste no README do repo Java), copie o token e use **Authorize**.
+
+### Simulador de frota (demonstração)
+
+Com as duas APIs no ar, um único comando reproduz os fluxos principais contra a API real:
+
+```bash
+dotnet run tools/simulador.cs -- http://localhost:8080 http://localhost:5080 gestor@ressoa.app <senha>
+```
+
+| Cenário | O que mostra |
+|---|---|
+| 1. Dia normal | Cada aparelho envia o status diário → `201` |
+| 2. Rede instável | Mesma `Idempotency-Key` reenviada → `200` + `Idempotency-Replayed: true`, sem duplicar |
+| 3. Bateria baixa | Status vira `BATERIA_BAIXA` e o alerta aparece em `/status` |
+| 4. Sinal voltou | Leituras acumuladas offline são aceitas sem regredir o status atual |
+| 5. Rajada | Excede o limite por minuto → `429` com `Retry-After` |
+
+O fluxo completo (login na API Java → leitura na .NET → status refletido na API Java → health `Healthy`) foi validado com Oracle 23 e RabbitMQ.
 
 ## Declaração de uso de IA
 
