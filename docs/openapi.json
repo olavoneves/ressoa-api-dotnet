@@ -1,0 +1,692 @@
+{
+    "openapi": "3.1.1",
+    "info": {
+        "title": "Ressoa — API de Telemetria",
+        "description": "Recebe o status diário dos aparelhos Ressoa (bateria, temperatura da água e pulso de ultrassom)\r\ne informa ao app se a água de cada recipiente está protegida.\r\n\r\n**Autenticação:** faça login na API Java (`POST /api/auth/login`), copie o `token` e use **Authorize**.\r\n**Idempotência:** `POST /api/v1/leituras` exige o header `Idempotency-Key` (até 64 caracteres, ex.: um UUID).\r\n**Rate limit:** excesso de requisições devolve `429` com `Retry-After`.",
+        "version": "v1"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:5080/"
+        }
+    ],
+    "paths": {
+        "/api/v1/leituras": {
+            "post": {
+                "tags": [
+                    "Telemetria"
+                ],
+                "summary": "Registra o status enviado pelo aparelho (idempotente)",
+                "description": "Envie o header Idempotency-Key. Reenvio com a mesma chave e o mesmo corpo devolve 200 com a leitura original e o header Idempotency-Replayed: true; com corpo diferente devolve 422.",
+                "operationId": "RegistrarLeitura",
+                "parameters": [
+                    {
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "description": "Chave única da leitura (ex.: UUID), até 64 caracteres",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LeituraRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LeituraResponse"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LeituraResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/dispositivos/{id}/leituras": {
+            "get": {
+                "tags": [
+                    "Telemetria"
+                ],
+                "summary": "Histórico paginado de leituras do aparelho (mais recentes primeiro)",
+                "operationId": "HistoricoLeituras",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "format": "int32",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "schema": {
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "format": "int32",
+                            "default": 20
+                        }
+                    },
+                    {
+                        "name": "de",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "ate",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                ],
+                "responses": {
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PageResponseOfLeituraResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/dispositivos/{id}/status": {
+            "get": {
+                "tags": [
+                    "Telemetria"
+                ],
+                "summary": "Último status do aparelho com indicadores e alertas para o morador",
+                "operationId": "StatusDispositivo",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "responses": {
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StatusDispositivoResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "HttpValidationProblemDetails": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "title": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "status": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "null",
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int32"
+                    },
+                    "detail": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "instance": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "errors": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "LeituraRequest": {
+                "required": [
+                    "bateriaPct",
+                    "temperaturaAgua",
+                    "pulsoOk"
+                ],
+                "type": "object",
+                "properties": {
+                    "numeroSerie": {
+                        "maxLength": 40,
+                        "minLength": 4,
+                        "type": [
+                            "null",
+                            "string"
+                        ],
+                        "description": "Número de série gravado no aparelho, ex.: RSA-2026-0001"
+                    },
+                    "dispositivoId": {
+                        "maximum": 9223372036854776000,
+                        "minimum": 1,
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "null",
+                            "integer",
+                            "string"
+                        ],
+                        "description": "Id do aparelho na plataforma (alternativa ao número de série)",
+                        "format": "int64"
+                    },
+                    "bateriaPct": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "null",
+                            "integer",
+                            "string"
+                        ],
+                        "description": "Carga da bateria, de 0 a 100",
+                        "format": "int32"
+                    },
+                    "temperaturaAgua": {
+                        "maximum": 60,
+                        "minimum": -10,
+                        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                        "type": [
+                            "null",
+                            "number",
+                            "string"
+                        ],
+                        "description": "Temperatura da água em °C",
+                        "format": "double"
+                    },
+                    "pulsoOk": {
+                        "type": [
+                            "null",
+                            "boolean"
+                        ],
+                        "description": "Se o pulso de ultrassom do dia foi executado com sucesso"
+                    },
+                    "registradaEm": {
+                        "type": [
+                            "null",
+                            "string"
+                        ],
+                        "description": "Momento da medição (UTC). Opcional: padrão é o horário do servidor. Aceita até 7 dias atrás (modo offline)",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "LeituraResponse": {
+                "required": [
+                    "id",
+                    "dispositivoId",
+                    "numeroSerie",
+                    "registradaEm",
+                    "bateriaPct",
+                    "temperaturaAgua",
+                    "pulsoOk",
+                    "statusDispositivo"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int64"
+                    },
+                    "dispositivoId": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int64"
+                    },
+                    "numeroSerie": {
+                        "type": "string"
+                    },
+                    "registradaEm": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "bateriaPct": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int32"
+                    },
+                    "temperaturaAgua": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                        "type": [
+                            "number",
+                            "string"
+                        ],
+                        "format": "double"
+                    },
+                    "pulsoOk": {
+                        "type": "boolean"
+                    },
+                    "statusDispositivo": {
+                        "$ref": "#/components/schemas/StatusDispositivo"
+                    }
+                }
+            },
+            "PageResponseOfLeituraResponse": {
+                "required": [
+                    "content",
+                    "page",
+                    "size",
+                    "totalElements",
+                    "totalPages",
+                    "last"
+                ],
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LeituraResponse"
+                        }
+                    },
+                    "page": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int32"
+                    },
+                    "size": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int32"
+                    },
+                    "totalElements": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int64"
+                    },
+                    "totalPages": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int32"
+                    },
+                    "last": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "ProblemDetails": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "title": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "status": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "null",
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int32"
+                    },
+                    "detail": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "instance": {
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    }
+                }
+            },
+            "StatusDispositivo": {
+                "enum": [
+                    "ATIVO",
+                    "SEM_SINAL",
+                    "BATERIA_BAIXA",
+                    "INATIVO"
+                ]
+            },
+            "StatusDispositivoResponse": {
+                "required": [
+                    "dispositivoId",
+                    "numeroSerie",
+                    "status",
+                    "online",
+                    "ultimaLeituraEm",
+                    "bateriaPct",
+                    "temperaturaAgua",
+                    "ultimoPulsoOk",
+                    "pulsosPorDia",
+                    "taxaSucessoPulso7Dias",
+                    "leiturasUltimos7Dias",
+                    "alertas"
+                ],
+                "type": "object",
+                "properties": {
+                    "dispositivoId": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int64"
+                    },
+                    "numeroSerie": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/StatusDispositivo"
+                    },
+                    "online": {
+                        "type": "boolean"
+                    },
+                    "ultimaLeituraEm": {
+                        "type": [
+                            "null",
+                            "string"
+                        ],
+                        "format": "date-time"
+                    },
+                    "bateriaPct": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "null",
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int32"
+                    },
+                    "temperaturaAgua": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                        "type": [
+                            "null",
+                            "number",
+                            "string"
+                        ],
+                        "format": "double"
+                    },
+                    "ultimoPulsoOk": {
+                        "type": [
+                            "null",
+                            "boolean"
+                        ]
+                    },
+                    "pulsosPorDia": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int32"
+                    },
+                    "taxaSucessoPulso7Dias": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                        "type": [
+                            "null",
+                            "number",
+                            "string"
+                        ],
+                        "format": "double"
+                    },
+                    "leiturasUltimos7Dias": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int32"
+                    },
+                    "alertas": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "Bearer": {
+                "type": "http",
+                "description": "Token JWT emitido pela API Java do Ressoa",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    },
+    "security": [
+        {
+            "Bearer": []
+        }
+    ],
+    "tags": [
+        {
+            "name": "Telemetria"
+        }
+    ]
+}
