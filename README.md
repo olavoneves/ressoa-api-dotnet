@@ -89,7 +89,7 @@ Content-Type: application/json
 
 ## Como rodar
 
-**Pré-requisitos:** .NET SDK 10 e um Oracle com o esquema do `scripts/script-bd.sql` (repo Java). Para desenvolvimento: `docker compose -f infra/docker-compose.yml up -d oracle` (repositório hub).
+**Pré-requisitos:** .NET SDK 10 (ou Docker: `docker build -f dockerfiles/Dockerfile -t ressoa-api-dotnet .`) e um Oracle com o esquema do `scripts/script-bd.sql` (repo Java). Para desenvolvimento: `docker compose -f infra/docker-compose.yml up -d oracle` (repositório hub).
 
 ```bash
 # variáveis (veja .env.example) — nunca versione valores reais
@@ -121,6 +121,17 @@ dotnet run tools/simulador.cs -- http://localhost:8080 http://localhost:5080 ges
 | 5. Rajada | Excede o limite por minuto → `429` com `Retry-After` |
 
 O fluxo completo (login na API Java → leitura na .NET → status refletido na API Java → health `Healthy`) foi validado com Oracle 23 e RabbitMQ.
+
+## Deploy
+
+| Ambiente | URL |
+|---|---|
+| **API pública (Render)** | https://ressoa-api-dotnet.onrender.com |
+| Swagger | https://ressoa-api-dotnet.onrender.com/swagger |
+| Saúde | https://ressoa-api-dotnet.onrender.com/health |
+| API Java (login/JWT) | https://ressoa-api-java.onrender.com/swagger-ui.html |
+
+Contêiner Docker (`dockerfiles/Dockerfile`) pelo blueprint `render.yaml`, com banco **Oracle FIAP**. Segredos só nas variáveis de ambiente do Render. No plano gratuito a API pode hibernar; a primeira chamada acorda o serviço em alguns segundos.
 
 ## Declaração de uso de IA
 
